@@ -36,15 +36,28 @@ def yamltojson(fileio:TextIOWrapper,savePath:str):
         ruleList:dict = ruleDict.get('rule')
         ruleGroup:str = ruleDict.get('group')
         for rule in ruleList:
+            rule:dict = rule
             index += 1
             name = rule['name']
-            regex = rule['regex']
+        
+            if "f_regex" in rule and rule["f_regex"] != "":
+                regex = rule['f_regex']
+            elif "s_regex" in rule and rule["s_regex"] != "":
+                regex = rule['s_regex']
+            elif "regex" in rule and rule["regex"] != "":
+                regex = rule['regex']
+            else:
+                regex = ""
+
+            # print(f"{name}的规则是{regex}")
+            
             loaded = rule['loaded']
             scope = rule['scope']
             color = rule['color']
             yakitDict = bpRuleToYakitRule(ruleGroup,name,regex,loaded,scope,color,index)
             # print(yakitDict)
-            allDictList.append(yakitDict)
+            if yakitDict != {}:
+                allDictList.append(yakitDict)
     yakitJson = json.dumps(allDictList,indent=5,sort_keys=True)
 
     if(savePath != None):
@@ -72,6 +85,8 @@ def bpRuleToYakitRule(ruleGroup:str,name:str,rule:str,loaded:bool,scope:str,colo
     }
     """
     yakitDict = {}
+    if loaded == False:
+        return yakitDict
     yakitDict['ExtraTag'] = [ruleGroup+"/"+name]
     yakitDict['VerboseName'] = name
     yakitDict['Rule'] = rule
@@ -145,7 +160,7 @@ class Root(ttk.Frame):
     def _getHaeRuleFile(self):
         try:
             self.yamlTextArea.delete("1.0",tk.END)
-            self.haeYamlFileName = filedialog.askopenfilename(filetypes=[("hae规则文件",".yaml")],title="请选择hae配置文件")
+            self.haeYamlFileName = filedialog.askopenfilename(filetypes=[("hae规则文件",".yml"),("hae规则文件",".yaml")],title="请选择hae配置文件")
             with open(self.haeYamlFileName,encoding="utf-8") as yamlFile:
                 for i in yamlFile:
                     self.yamlTextArea.insert("insert",i)
@@ -172,7 +187,7 @@ class Root(ttk.Frame):
 
     def _saveYakitJson(self):
         try:
-            yamlFileName = filedialog.askopenfilename()
+            yamlFileName = filedialog.askopenfilename(title="选择保存的文件")
             ok = messagebox.askyesnocancel(message=f"是否保存到{yamlFileName}")
             if(ok):
                 with open(yamlFileName,mode="w+",encoding="utf-8") as yamlFile:
